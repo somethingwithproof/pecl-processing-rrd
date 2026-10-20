@@ -121,6 +121,7 @@ PHP_METHOD(RRDUpdater, update)
 	int argc = ZEND_NUM_ARGS();
 	zend_string *zs_ds_name, *zs_ds_val;
 	zval *zv_ds_val;
+	zval values_snapshot;
 	HashTable *values_ht;
 	/* __construct is callable again, so a __toString below could repoint the
 	 * object after the open_basedir check; work from a snapshot instead
@@ -161,13 +162,13 @@ PHP_METHOD(RRDUpdater, update)
 
 	/* converting a value runs __toString, which must not free this array */
 	values_ht = Z_ARRVAL_P(zv_values_array);
-	GC_ADDREF(values_ht);
+	ZVAL_COPY(&values_snapshot, zv_values_array);
 
 	ZEND_HASH_FOREACH_STR_KEY_VAL(values_ht, zs_ds_name, zv_ds_val) {
 		if (!zs_ds_name) {
 			smart_string_free(&ds_names);
 			smart_string_free(&ds_vals);
-			zend_array_release(values_ht);
+			zval_ptr_dtor(&values_snapshot);
 			efree(checked_path);
 			zend_throw_exception(NULL,
 				"values array must be keyed by data source name", 0);
@@ -187,11 +188,11 @@ PHP_METHOD(RRDUpdater, update)
 			smart_string_appends(&ds_vals, time);
 		}
 		smart_string_appendc(&ds_vals, ':');
-		zs_ds_val = zval_try_get_string(zv_ds_val);
+		zs_ds_val = rrd_zval_try_get_string(zv_ds_val);
 		if (!zs_ds_val) {
 			smart_string_free(&ds_names);
 			smart_string_free(&ds_vals);
-			zend_array_release(values_ht);
+			zval_ptr_dtor(&values_snapshot);
 			efree(checked_path);
 			return;
 		}
@@ -199,7 +200,7 @@ PHP_METHOD(RRDUpdater, update)
 		zend_string_release(zs_ds_val);
 	} ZEND_HASH_FOREACH_END();
 
-	zend_array_release(values_ht);
+	zval_ptr_dtor(&values_snapshot);
 
 	smart_string_0(&ds_names);
 	smart_string_0(&ds_vals);

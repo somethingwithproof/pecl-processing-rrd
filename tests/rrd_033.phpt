@@ -1,7 +1,10 @@
 --TEST--
 __toString() freeing the options array while it is being walked
 --SKIPIF--
-<?php include('skipif.inc'); ?>
+<?php
+include('skipif.inc');
+if (PHP_VERSION_ID < 70400) die('skip Exceptions from __toString require PHP 7.4');
+?>
 --FILE--
 <?php
 class Reenter {

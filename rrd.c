@@ -657,6 +657,7 @@ rrd_args *rrd_args_init_by_phparray(const char *command_name, const char *filena
 {
 	int allocated, filled = 0;
 	zval *item;
+	zval options_snapshot;
 	HashTable *ht;
 	rrd_args *result;
 
@@ -673,7 +674,7 @@ rrd_args *rrd_args_init_by_phparray(const char *command_name, const char *filena
 	 * while it is being walked, so keep our own reference and never write past
 	 * what was sized for.
 	 */
-	GC_ADDREF(ht);
+	ZVAL_COPY(&options_snapshot, options);
 	allocated = (int)zend_hash_num_elements(ht) + ((filename && *filename) ? 2 : 1);
 
 	result = (rrd_args *)emalloc(sizeof(rrd_args));
@@ -688,11 +689,11 @@ rrd_args *rrd_args_init_by_phparray(const char *command_name, const char *filena
 
 		if (filled >= allocated) break;
 
-		item_str = zval_try_get_string(item);
+		item_str = rrd_zval_try_get_string(item);
 		if (!item_str) {
 			result->count = filled;
 			rrd_args_free(result);
-			zend_array_release(ht);
+			zval_ptr_dtor(&options_snapshot);
 			return NULL;
 		}
 
@@ -700,7 +701,7 @@ rrd_args *rrd_args_init_by_phparray(const char *command_name, const char *filena
 		zend_string_release(item_str);
 	} ZEND_HASH_FOREACH_END();
 
-	zend_array_release(ht);
+	zval_ptr_dtor(&options_snapshot);
 
 	result->count = filled;
 	return result;

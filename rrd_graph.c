@@ -142,13 +142,14 @@ static rrd_args *rrd_graph_obj_create_argv(const char *command_name,
 	zend_string *zs_key;
 	/* arguments for rrd_graph call as php array - temporary storage */
 	zval zv_argv;
+	zval options_snapshot;
 	rrd_args *result;
 	/* converting a value runs __toString, and setOptions() from there would
 	 * free the array this loop is walking
 	 */
 	HashTable *ht = Z_ARRVAL(obj->zv_arr_options);
 
-	GC_ADDREF(ht);
+	ZVAL_COPY(&options_snapshot, &obj->zv_arr_options);
 	array_init(&zv_argv);
 
 	ZEND_HASH_FOREACH_KEY_VAL(ht, num_key, zs_key, zv_option_val) {
@@ -165,11 +166,11 @@ static rrd_args *rrd_graph_obj_create_argv(const char *command_name,
 		}
 
 		/* use always string for option value */
-		option_str = zval_try_get_string(zv_option_val);
+		option_str = rrd_zval_try_get_string(zv_option_val);
 		if (!option_str) {
 			smart_string_free(&option);
 			zval_ptr_dtor_nogc(&zv_argv);
-			zend_array_release(ht);
+			zval_ptr_dtor(&options_snapshot);
 			return NULL;
 		}
 
@@ -182,7 +183,7 @@ static rrd_args *rrd_graph_obj_create_argv(const char *command_name,
 		smart_string_free(&option);
 	} ZEND_HASH_FOREACH_END();
 
-	zend_array_release(ht);
+	zval_ptr_dtor(&options_snapshot);
 
 	result = rrd_args_init_by_phparray(command_name, file_path, &zv_argv);
 	zval_ptr_dtor_nogc(&zv_argv);
