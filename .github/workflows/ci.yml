@@ -19,8 +19,8 @@ jobs:
       matrix:
         php: ['8.1', '8.2', '8.3', '8.4', '8.5']
         include:
-          # nightly build of php-src master; allowed to fail so an unrelated
-          # upstream break does not gate pull requests
+          # PHP 8.6 is still a prerelease; unrelated upstream failures
+          # must not gate pull requests.
           - php: '8.6'
             experimental: true
 
