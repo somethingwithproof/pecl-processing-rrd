@@ -37,6 +37,9 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
         with:
           php-version: ${{ matrix.php }}
+          # PHP 7.0's runner copies $_ENV to child processes, including HOME
+          # for Fontconfig's writable user cache.
+          ini-values: variables_order=EGPCS
           tools: none
           coverage: none
 
